@@ -1,0 +1,11 @@
+{
+  "name": "mailroom",
+  "private": true,
+  "workspaces": ["apps/api", "apps/web"],
+  "scripts": {
+    "dev:api": "npm run dev -w @mailroom/api",
+    "dev:web": "npm run dev -w @mailroom/web",
+    "build": "npm run build -w @mailroom/api && npm run build -w @mailroom/web",
+    "check": "npm run check -w @mailroom/api"
+  }
+}

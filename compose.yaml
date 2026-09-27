@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: mailroom
+      POSTGRES_DB: mailroom
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mailroom"]
+      interval: 5s
+      retries: 10
+  api:
+    build: {context: ., target: api}
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
+      APP_ENCRYPTION_KEY: ${APP_ENCRYPTION_KEY:?set APP_ENCRYPTION_KEY}
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      PORT: 3001
+    depends_on: {db: {condition: service_healthy}}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      retries: 3
+  web:
+    build: {context: ., target: web}
+    environment:
+      API_INTERNAL: http://api:3001
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
+      HOST: 0.0.0.0
+      PORT: 3000
+    ports: ["127.0.0.1:3000:3000"]
+    depends_on: {api: {condition: service_healthy}}
+volumes:
+  postgres_data:
